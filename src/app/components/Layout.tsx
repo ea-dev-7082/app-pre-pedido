@@ -1,9 +1,11 @@
-import { Outlet, NavLink } from "react-router";
-import { FileText, CheckCircle, Import, Search, Sparkles } from "lucide-react";
+import { Outlet, NavLink, useNavigate } from "react-router";
+import { FileText, CheckCircle, Import, Search, Sparkles, PlusCircle } from "lucide-react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 
 export function Layout() {
+  const navigate = useNavigate();
+
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
@@ -89,7 +91,11 @@ export function Layout() {
               className="pl-12 h-11 bg-gray-50/50 border-gray-200 focus:bg-white rounded-xl shadow-sm"
             />
           </div>
-          <Button className="h-11 px-6 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 shadow-lg shadow-blue-500/30 rounded-xl">
+          <Button 
+            onClick={() => navigate("/?new=true")}
+            className="h-11 px-6 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 shadow-lg shadow-blue-500/30 rounded-xl gap-2"
+          >
+            <PlusCircle className="w-4 h-4" />
             Novo Pedido
           </Button>
         </header>

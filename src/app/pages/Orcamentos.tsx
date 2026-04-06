@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Mail, MessageSquare, Trash2, Save, Calculator, CheckCircle2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Mail, MessageSquare, Trash2, Save, Calculator, CheckCircle2, Plus } from "lucide-react";
+import { useSearchParams, useNavigate } from "react-router";
 import { StatusBadge } from "../components/StatusBadge";
 import { PriceBadge } from "../components/PriceBadge";
 import { DiscountSuggestion } from "../components/DiscountSuggestion";
@@ -7,100 +8,67 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Card } from "../components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../components/ui/tooltip";
-
-type PriceType = "normal" | "oferta" | "lote";
-type Status = "novo" | "em-analise";
-
-interface OrderItem {
-  id: string;
-  produto: string;
-  quantidade: number;
-  precoUnitario: number;
-  tipoPreco: PriceType;
-  total: number;
-  suggestQuantity?: number;
-  suggestPrice?: number;
-}
-
-interface Order {
-  id: string;
-  cliente: string;
-  origem: "whatsapp" | "email";
-  data: string;
-  status: Status;
-  items: OrderItem[];
-}
-
-const mockOrders: Order[] = [
-  {
-    id: "1",
-    cliente: "Auto Center Silva",
-    origem: "whatsapp",
-    data: "2026-03-24",
-    status: "novo",
-    items: [
-      {
-        id: "1",
-        produto: "Filtro de Óleo Mann W67/2",
-        quantidade: 10,
-        precoUnitario: 25.90,
-        tipoPreco: "normal",
-        total: 259.00,
-        suggestQuantity: 20,
-        suggestPrice: 22.50,
-      },
-      {
-        id: "2",
-        produto: "Pastilha de Freio Cobreq",
-        quantidade: 15,
-        precoUnitario: 89.90,
-        tipoPreco: "oferta",
-        total: 1348.50,
-      },
-    ],
-  },
-  {
-    id: "2",
-    cliente: "Oficina Mecânica Santos",
-    origem: "email",
-    data: "2026-03-23",
-    status: "em-analise",
-    items: [
-      {
-        id: "3",
-        produto: "Óleo Motor 5W30 Mobil",
-        quantidade: 50,
-        precoUnitario: 45.00,
-        tipoPreco: "lote",
-        total: 2250.00,
-      },
-    ],
-  },
-  {
-    id: "3",
-    cliente: "Posto Rodoviário Ltda",
-    origem: "whatsapp",
-    data: "2026-03-22",
-    status: "novo",
-    items: [
-      {
-        id: "4",
-        produto: "Bateria Moura 60Ah",
-        quantidade: 8,
-        precoUnitario: 450.00,
-        tipoPreco: "normal",
-        total: 3600.00,
-        suggestQuantity: 12,
-        suggestPrice: 420.00,
-      },
-    ],
-  },
-];
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle, 
+  AlertDialogTrigger 
+} from "../components/ui/alert-dialog";
+import { useOrders, Order, OrderItem } from "../contexts/OrdersContext";
 
 export function Orcamentos() {
-  const [selectedOrder, setSelectedOrder] = useState<Order>(mockOrders[0]);
-  const [items, setItems] = useState<OrderItem[]>(selectedOrder.items);
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { activeOrders, closeOrder, addOrder } = useOrders();
+  
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(activeOrders[0] || null);
+  const [items, setItems] = useState<OrderItem[]>(activeOrders[0]?.items || []);
+  const [cliente, setCliente] = useState(activeOrders[0]?.cliente || "");
   const [isCalculating, setIsCalculating] = useState(false);
+  const [newProductInput, setNewProductInput] = useState("");
+
+  useEffect(() => {
+    if (searchParams.get("new") === "true") {
+      handleNewOrder();
+      // Limpa o parâmetro da URL após processar
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("new");
+      setSearchParams(newParams);
+    }
+  }, [searchParams]);
+
+  const handleNewOrder = () => {
+    setSelectedOrder(null);
+    setItems([]);
+    setCliente("");
+  };
+
+  const handleAddProduct = () => {
+    if (!newProductInput.trim()) return;
+    
+    const newItem: OrderItem = {
+      id: Math.random().toString(36).substr(2, 9),
+      produto: newProductInput,
+      quantidade: 1,
+      precoUnitario: 0,
+      tipoPreco: "normal",
+      total: 0,
+    };
+    
+    setItems((prev) => [...prev, newItem]);
+    setNewProductInput("");
+  };
+
+  const handleSelectOrder = (order: Order) => {
+    setSelectedOrder(order);
+    setItems(order.items);
+    setCliente(order.cliente);
+  };
 
   const handleQuantityChange = (itemId: string, newQuantity: number) => {
     setItems((prev) =>
@@ -120,11 +88,27 @@ export function Orcamentos() {
   };
 
   const handleSave = () => {
-    // Lógica de salvar
+    if (!cliente) return;
+    
+    const newOrder: Order = {
+      id: Math.random().toString(36).substr(2, 9),
+      cliente,
+      items,
+      data: new Date().toISOString().split('T')[0],
+      origem: "whatsapp",
+      status: "novo"
+    };
+
+    addOrder(newOrder);
+    handleSelectOrder(newOrder);
+    console.log("Pedido salvo:", newOrder);
   };
 
   const handleCloseOrder = () => {
-    // Lógica de fechar pedido
+    if (selectedOrder) {
+      closeOrder(selectedOrder.id);
+      navigate("/pedidos-fechados");
+    }
   };
 
   const handleDeleteItem = (itemId: string) => {
@@ -137,21 +121,44 @@ export function Orcamentos() {
     <div className="flex h-full">
       {/* Lista de Pedidos */}
       <div className="w-96 border-r border-border bg-white overflow-y-auto shadow-sm">
-        <div className="p-6 border-b border-border bg-gradient-to-br from-gray-50 to-white">
-          <h2 className="text-xl font-semibold text-gray-900">Orçamentos em Aberto</h2>
-          <p className="text-sm text-gray-500 mt-1">{mockOrders.length} pedidos ativos</p>
+        <div className="p-6 border-b border-border bg-gradient-to-br from-gray-50 to-white flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Orçamentos em Aberto</h2>
+            <p className="text-sm text-gray-500 mt-1">{activeOrders.length} pedidos ativos</p>
+          </div>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={handleNewOrder}
+            className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100"
+          >
+            <Plus className="w-5 h-5" />
+          </Button>
         </div>
 
         <div className="p-3 space-y-3">
-          {mockOrders.map((order) => (
+          {/* Item de Novo Pedido (se estiver criando) */}
+          {!selectedOrder && (
+            <div className="w-full text-left p-4 rounded-2xl transition-all duration-200 bg-gradient-to-br from-blue-50 to-blue-100/50 border-2 border-blue-500 shadow-lg shadow-blue-500/10 scale-[1.02]">
+              <div className="flex items-start justify-between mb-3">
+                <h3 className="font-semibold text-gray-900 truncate pr-2">Novo Orçamento</h3>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-blue-500 shadow-lg shadow-blue-500/30">
+                  <Plus className="w-4 h-4 text-white" />
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-500">Agoras mesmo</span>
+                <StatusBadge status="novo" />
+              </div>
+            </div>
+          )}
+
+          {activeOrders.map((order) => (
             <button
               key={order.id}
-              onClick={() => {
-                setSelectedOrder(order);
-                setItems(order.items);
-              }}
+              onClick={() => handleSelectOrder(order)}
               className={`w-full text-left p-4 rounded-2xl transition-all duration-200 ${
-                selectedOrder.id === order.id
+                selectedOrder?.id === order.id
                   ? "bg-gradient-to-br from-blue-50 to-blue-100/50 border-2 border-blue-500 shadow-lg shadow-blue-500/10 scale-[1.02]"
                   : "bg-white hover:bg-gray-50 border-2 border-gray-100 hover:border-gray-200 hover:shadow-md"
               }`}
@@ -187,21 +194,31 @@ export function Orcamentos() {
         {/* Header do Pedido */}
         <div className="p-8 border-b border-border bg-white shadow-sm">
           <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-3xl font-semibold text-gray-900">{selectedOrder.cliente}</h2>
+            <div className="flex-1 max-2xl">
+              {!selectedOrder ? (
+                <Input
+                  value={cliente}
+                  onChange={(e) => setCliente(e.target.value)}
+                  placeholder="Nome do Cliente..."
+                  className="text-3xl font-semibold text-gray-900 h-auto p-0 border-0 focus-visible:ring-0 bg-transparent placeholder:text-gray-300"
+                  autoFocus
+                />
+              ) : (
+                <h2 className="text-3xl font-semibold text-gray-900">{cliente}</h2>
+              )}
               <div className="flex items-center gap-4 mt-3">
                 <span className="text-sm text-gray-500">
-                  {new Date(selectedOrder.data).toLocaleDateString("pt-BR", {
+                  {new Date(selectedOrder?.data || new Date()).toLocaleDateString("pt-BR", {
                     day: "2-digit",
                     month: "long",
                     year: "numeric",
                   })}
                 </span>
-                <StatusBadge status={selectedOrder.status} />
+                <StatusBadge status={selectedOrder?.status || "novo"} />
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {selectedOrder.origem === "whatsapp" ? (
+              {(selectedOrder?.origem || "whatsapp") === "whatsapp" ? (
                 <div className="flex items-center gap-2.5 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl text-sm font-medium shadow-lg shadow-green-500/30">
                   <MessageSquare className="w-4 h-4" />
                   <span>WhatsApp</span>
@@ -213,6 +230,29 @@ export function Orcamentos() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Barra de Adição de Produtos */}
+        <div className="px-8 pt-6">
+          <div className="flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+            <div className="flex-1 relative">
+              <Plus className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Input
+                placeholder="Inserir código ou nome do produto para adicionar..."
+                value={newProductInput}
+                onChange={(e) => setNewProductInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddProduct()}
+                className="pl-12 h-12 bg-gray-50 border-gray-100 focus:bg-white rounded-xl"
+              />
+            </div>
+            <Button 
+              onClick={handleAddProduct}
+              className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/20 gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Adicionar
+            </Button>
           </div>
         </div>
 
@@ -283,20 +323,60 @@ export function Orcamentos() {
                       <td className="p-5 text-right font-bold text-gray-900 text-lg">
                         R$ {item.total.toFixed(2)}
                       </td>
-                      <td className="p-5">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteItem(item.id)}
-                          className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                      <td className="p-5 text-right">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="rounded-2xl">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remover Item?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem certeza que deseja remover "{item.produto}" deste orçamento? Esta ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDeleteItem(item.id)}
+                                className="bg-red-500 hover:bg-red-600 rounded-xl"
+                              >
+                                Remover
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+            <div className="p-4 bg-gray-50/50 border-t border-gray-100 flex justify-center">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  const newItem: OrderItem = {
+                    id: Math.random().toString(36).substr(2, 9),
+                    produto: "Novo Produto",
+                    quantidade: 1,
+                    precoUnitario: 0,
+                    tipoPreco: "normal",
+                    total: 0,
+                  };
+                  setItems([...items, newItem]);
+                }}
+                className="gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl font-semibold"
+              >
+                <Plus className="w-4 h-4" />
+                Adicionar Item ao Pedido
+              </Button>
             </div>
           </Card>
         </div>

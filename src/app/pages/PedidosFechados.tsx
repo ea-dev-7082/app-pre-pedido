@@ -4,63 +4,10 @@ import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
-
-type ExportStatus = "exportado" | "pendente";
-
-interface ClosedOrder {
-  id: string;
-  cliente: string;
-  data: string;
-  valorTotal: number;
-  status: ExportStatus;
-  itensCount: number;
-}
-
-const mockClosedOrders: ClosedOrder[] = [
-  {
-    id: "C001",
-    cliente: "Auto Center Silva",
-    data: "2026-03-20",
-    valorTotal: 15890.50,
-    status: "exportado",
-    itensCount: 12,
-  },
-  {
-    id: "C002",
-    cliente: "Oficina Mecânica Santos",
-    data: "2026-03-19",
-    valorTotal: 8450.00,
-    status: "pendente",
-    itensCount: 8,
-  },
-  {
-    id: "C003",
-    cliente: "Posto Rodoviário Ltda",
-    data: "2026-03-18",
-    valorTotal: 23500.00,
-    status: "exportado",
-    itensCount: 20,
-  },
-  {
-    id: "C004",
-    cliente: "Distribuidora Automotiva",
-    data: "2026-03-17",
-    valorTotal: 45600.00,
-    status: "exportado",
-    itensCount: 35,
-  },
-  {
-    id: "C005",
-    cliente: "Mecânica Central",
-    data: "2026-03-16",
-    valorTotal: 6780.00,
-    status: "pendente",
-    itensCount: 5,
-  },
-];
+import { useOrders } from "../contexts/OrdersContext";
 
 export function PedidosFechados() {
-  const [orders] = useState<ClosedOrder[]>(mockClosedOrders);
+  const { closedOrders } = useOrders();
   const [searchTerm, setSearchTerm] = useState("");
 
   const handleExport = (orderId: string) => {
@@ -68,12 +15,12 @@ export function PedidosFechados() {
     // Lógica de exportação
   };
 
-  const filteredOrders = orders.filter((order) =>
+  const filteredOrders = closedOrders.filter((order) =>
     order.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
     order.id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalValue = filteredOrders.reduce((sum, order) => sum + order.valorTotal, 0);
+  const totalValue = filteredOrders.reduce((sum: number, order) => sum + order.valorTotal, 0);
   const pendingCount = filteredOrders.filter((o) => o.status === "pendente").length;
 
   return (
