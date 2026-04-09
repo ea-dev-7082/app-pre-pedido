@@ -95,19 +95,19 @@ export function PedidosFechados() {
     <div className="p-8 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-4xl font-bold text-gray-900">Pedidos Fechados</h1>
-        <p className="text-gray-500 mt-2 text-lg">
+        <h1 className="text-4xl font-bold text-foreground">Pedidos Fechados</h1>
+        <p className="text-muted-foreground mt-2 text-lg">
           Histórico de pedidos finalizados e exportações
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100/50 border-0 shadow-lg hover:shadow-xl transition-shadow rounded-2xl">
+        <Card className="p-6 bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-0 shadow-lg hover:shadow-xl transition-shadow rounded-2xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-blue-600 font-medium">Total de Pedidos</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{filteredOrders.length}</p>
+              <p className="text-sm text-blue-500 font-medium">Total de Pedidos</p>
+              <p className="text-3xl font-bold text-foreground mt-2">{filteredOrders.length}</p>
             </div>
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
               <FileSpreadsheet className="w-7 h-7 text-white" />
@@ -115,11 +115,11 @@ export function PedidosFechados() {
           </div>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-emerald-50 to-green-100/50 border-0 shadow-lg hover:shadow-xl transition-shadow rounded-2xl">
+        <Card className="p-6 bg-gradient-to-br from-emerald-500/10 to-green-600/5 border-0 shadow-lg hover:shadow-xl transition-shadow rounded-2xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-emerald-600 font-medium">Valor Total</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">
+              <p className="text-sm text-emerald-500 font-medium">Valor Total</p>
+              <p className="text-3xl font-bold text-foreground mt-2">
                 R$ {totalValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
               </p>
             </div>
@@ -129,11 +129,11 @@ export function PedidosFechados() {
           </div>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-orange-50 to-amber-100/50 border-0 shadow-lg hover:shadow-xl transition-shadow rounded-2xl">
+        <Card className="p-6 bg-gradient-to-br from-orange-500/10 to-amber-600/5 border-0 shadow-lg hover:shadow-xl transition-shadow rounded-2xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-orange-600 font-medium">Pendentes Exportação</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{pendingCount}</p>
+              <p className="text-sm text-orange-500 font-medium">Pendentes Exportação</p>
+              <p className="text-3xl font-bold text-foreground mt-2">{pendingCount}</p>
             </div>
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/30">
               <Clock className="w-7 h-7 text-white" />
@@ -151,7 +151,7 @@ export function PedidosFechados() {
               placeholder="Buscar por cliente ou número do pedido..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-gray-50 border-gray-200 h-11 rounded-xl"
+              className="bg-muted/50 border-border h-11 rounded-xl"
             />
           </div>
           <Button 
@@ -169,25 +169,25 @@ export function PedidosFechados() {
       <Card className="border-0 shadow-lg rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50 border-b-2 border-gray-200">
+            <thead className="bg-gradient-to-r from-muted/50 to-muted/20 border-b-2 border-border">
               <tr>
-                <th className="text-left p-5 font-semibold text-sm text-gray-700">Nº Pedido</th>
-                <th className="text-left p-5 font-semibold text-sm text-gray-700">Cliente</th>
-                <th className="text-left p-5 font-semibold text-sm text-gray-700">Data</th>
-                <th className="text-right p-5 font-semibold text-sm text-gray-700">Itens</th>
-                <th className="text-right p-5 font-semibold text-sm text-gray-700">Valor Total</th>
-                <th className="text-center p-5 font-semibold text-sm text-gray-700">Status</th>
-                <th className="text-center p-5 font-semibold text-sm text-gray-700 w-32">Ações</th>
+                <th className="text-left p-5 font-semibold text-sm text-foreground">Nº Pedido</th>
+                <th className="text-left p-5 font-semibold text-sm text-foreground">Cliente</th>
+                <th className="text-left p-5 font-semibold text-sm text-foreground">Data</th>
+                <th className="text-right p-5 font-semibold text-sm text-foreground">Itens</th>
+                <th className="text-right p-5 font-semibold text-sm text-foreground">Valor Total</th>
+                <th className="text-center p-5 font-semibold text-sm text-foreground">Status</th>
+                <th className="text-center p-5 font-semibold text-sm text-foreground w-32">Ações</th>
               </tr>
             </thead>
-            <tbody className="bg-white">
+            <tbody className="bg-card">
               {filteredOrders.map((order, index) => (
-                <tr key={order.id} className={`border-b border-gray-100 last:border-0 hover:bg-blue-50/30 transition-all duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
+                <tr key={order.id} className={`border-b border-border last:border-0 hover:bg-blue-500/5 transition-all duration-200 ${index % 2 === 0 ? 'bg-card' : 'bg-muted/10'}`}>
                   <td className="p-5">
-                    <span className="font-mono font-semibold text-gray-900 bg-gray-100 px-3 py-1.5 rounded-lg">{order.id}</span>
+                    <span className="font-mono font-semibold text-foreground bg-muted px-3 py-1.5 rounded-lg">{order.id}</span>
                   </td>
                   <td className="p-5">
-                    <span className="font-semibold text-gray-900">{order.cliente}</span>
+                    <span className="font-semibold text-foreground">{order.cliente}</span>
                   </td>
                   <td className="p-5">
                     <span className="text-gray-500">
@@ -195,9 +195,9 @@ export function PedidosFechados() {
                     </span>
                   </td>
                   <td className="p-5 text-right">
-                    <span className="text-gray-700 bg-gray-100 px-3 py-1.5 rounded-lg font-medium">{order.itensCount}</span>
+                    <span className="text-foreground bg-muted px-3 py-1.5 rounded-lg font-medium">{order.itensCount}</span>
                   </td>
-                  <td className="p-5 text-right font-bold text-gray-900 text-lg">
+                  <td className="p-5 text-right font-bold text-foreground text-lg">
                     R$ {order.valorTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </td>
                   <td className="p-5 text-center">
@@ -246,36 +246,36 @@ export function PedidosFechados() {
                           
                           <div className="p-8">
                             <div className="flex items-center justify-between mb-6">
-                              <h3 className="text-lg font-bold text-gray-900">Itens do Pedido ({order.itensCount})</h3>
-                              <span className="text-sm text-gray-500">{new Date(order.data).toLocaleDateString("pt-BR", { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+                              <h3 className="text-lg font-bold text-foreground">Itens do Pedido ({order.itensCount})</h3>
+                              <span className="text-sm text-muted-foreground">{new Date(order.data).toLocaleDateString("pt-BR", { day: '2-digit', month: 'long', year: 'numeric' })}</span>
                             </div>
 
-                            <div className="rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+                            <div className="rounded-2xl border border-border overflow-hidden shadow-sm">
                               <table className="w-full">
-                                <thead className="bg-gray-50 border-b border-gray-100">
+                                <thead className="bg-muted border-b border-border">
                                   <tr>
-                                    <th className="text-left p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Produto</th>
-                                    <th className="text-center p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Qtde</th>
-                                    <th className="text-right p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Preço</th>
-                                    <th className="text-right p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Total</th>
+                                    <th className="text-left p-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Produto</th>
+                                    <th className="text-center p-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Qtde</th>
+                                    <th className="text-right p-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Preço</th>
+                                    <th className="text-right p-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Total</th>
                                   </tr>
                                 </thead>
-                                <tbody className="bg-white divide-y divide-gray-50 text-sm">
+                                <tbody className="bg-card divide-y divide-border text-sm">
                                   {order.items.map((item) => (
-                                    <tr key={item.id} className="hover:bg-blue-50/10 transition-colors">
+                                    <tr key={item.id} className="hover:bg-blue-500/5 transition-colors">
                                       <td className="p-4">
-                                        <p className="font-semibold text-gray-900">{item.produto}</p>
+                                        <p className="font-semibold text-foreground">{item.produto}</p>
                                         <Badge variant="outline" className={`mt-1 text-[10px] px-1.5 py-0 uppercase ${
-                                          item.tipoPreco === "lote" ? "text-emerald-600 border-emerald-200 bg-emerald-50" : 
-                                          item.tipoPreco === "oferta" ? "text-orange-600 border-orange-200 bg-orange-50" :
-                                          "text-gray-500 border-gray-200 bg-gray-50"
+                                          item.tipoPreco === "lote" ? "text-emerald-600 border-emerald-200 bg-emerald-500/10" : 
+                                          item.tipoPreco === "oferta" ? "text-orange-600 border-orange-200 bg-orange-500/10" :
+                                          "text-muted-foreground border-border bg-muted/50"
                                         }`}>
                                           {item.tipoPreco}
                                         </Badge>
                                       </td>
                                       <td className="p-4 text-center font-medium">{item.quantidade}</td>
-                                      <td className="p-4 text-right text-gray-500">R$ {item.precoUnitario.toFixed(2)}</td>
-                                      <td className="p-4 text-right font-bold text-gray-900">R$ {item.total.toFixed(2)}</td>
+                                      <td className="p-4 text-right text-muted-foreground">R$ {item.precoUnitario.toFixed(2)}</td>
+                                      <td className="p-4 text-right font-bold text-foreground">R$ {item.total.toFixed(2)}</td>
                                     </tr>
                                   ))}
                                 </tbody>
@@ -303,11 +303,11 @@ export function PedidosFechados() {
         </div>
 
         {filteredOrders.length === 0 && (
-          <div className="p-16 text-center bg-gray-50/50">
-            <div className="w-16 h-16 rounded-2xl bg-gray-100 mx-auto mb-4 flex items-center justify-center">
-              <FileSpreadsheet className="w-8 h-8 text-gray-400" />
+          <div className="p-16 text-center bg-muted/20">
+            <div className="w-16 h-16 rounded-2xl bg-muted mx-auto mb-4 flex items-center justify-center">
+              <FileSpreadsheet className="w-8 h-8 text-muted-foreground" />
             </div>
-            <p className="text-gray-500 text-lg">Nenhum pedido encontrado</p>
+            <p className="text-muted-foreground text-lg">Nenhum pedido encontrado</p>
           </div>
         )}
       </Card>

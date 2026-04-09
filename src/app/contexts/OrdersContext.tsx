@@ -52,6 +52,7 @@ interface OrdersContextType {
   closeOrder: (orderId: string) => void;
   deleteOrder: (orderId: string) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
+  updateOrder: (order: Order) => void;
   updateClosedOrderStatus: (orderId: string, status: ExportStatus) => void;
   removePendingImport: (importId: string) => void;
 }
@@ -274,6 +275,14 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const updateOrder = (updatedOrder: Order) => {
+    setActiveOrders((prev) =>
+      prev.map((order) =>
+        order.id === updatedOrder.id ? updatedOrder : order
+      )
+    );
+  };
+
   const updateClosedOrderStatus = (orderId: string, status: ExportStatus) => {
     setClosedOrders((prev) =>
       prev.map((order) =>
@@ -295,6 +304,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       closeOrder, 
       deleteOrder, 
       updateOrderStatus, 
+      updateOrder,
       updateClosedOrderStatus,
       removePendingImport
     }}>

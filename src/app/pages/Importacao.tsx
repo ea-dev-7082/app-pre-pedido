@@ -128,19 +128,19 @@ export function Importacao() {
     <div className="p-8 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-4xl font-bold text-gray-900">Importação de Pedidos</h1>
-        <p className="text-gray-500 mt-2 text-lg">
+        <h1 className="text-4xl font-bold text-foreground">Importação de Pedidos</h1>
+        <p className="text-muted-foreground mt-2 text-lg">
           Pedidos recebidos via WhatsApp e Email aguardando processamento
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100/50 border-0 shadow-lg hover:shadow-xl transition-shadow rounded-2xl">
+        <Card className="p-6 bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-0 shadow-lg hover:shadow-xl transition-shadow rounded-2xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-blue-600 font-medium">Aguardando Processamento</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{pendingImports.length}</p>
+              <p className="text-sm text-blue-500 font-medium">Aguardando Processamento</p>
+              <p className="text-3xl font-bold text-foreground mt-2">{pendingImports.length}</p>
             </div>
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
               <FileText className="w-7 h-7 text-white" />
@@ -148,11 +148,11 @@ export function Importacao() {
           </div>
         </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-emerald-50 to-green-100/50 border-0 shadow-lg hover:shadow-xl transition-shadow rounded-2xl">
+        <Card className="p-6 bg-gradient-to-br from-emerald-500/10 to-green-600/5 border-0 shadow-lg hover:shadow-xl transition-shadow rounded-2xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-emerald-600 font-medium">Processados Hoje</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">12</p>
+              <p className="text-sm text-emerald-500 font-medium">Processados Hoje</p>
+              <p className="text-3xl font-bold text-foreground mt-2">12</p>
             </div>
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
               <ArrowRight className="w-7 h-7 text-white" />
@@ -164,7 +164,7 @@ export function Importacao() {
       {/* Lista de Importações */}
       <div className="space-y-5">
         {pendingImports.map((importItem) => (
-          <Card key={importItem.id} className="p-6 border-0 shadow-lg hover:shadow-xl transition-all duration-200 rounded-2xl">
+          <Card key={importItem.id} className="p-6 border-0 shadow-lg hover:shadow-xl transition-all duration-200 rounded-2xl bg-card">
             <div className="space-y-4">
               {/* Header do Card */}
               <div className="flex items-start justify-between">
@@ -183,7 +183,7 @@ export function Importacao() {
                     )}
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900">{importItem.cliente}</h3>
+                    <h3 className="text-xl font-semibold text-foreground">{importItem.cliente}</h3>
                     <div className="flex items-center gap-3 mt-2">
                       <Badge
                         variant="secondary"
@@ -195,7 +195,7 @@ export function Importacao() {
                       >
                         {importItem.origem === "whatsapp" ? "WhatsApp" : "Email"}
                       </Badge>
-                      <span className="text-sm text-gray-500 font-medium">
+                      <span className="text-sm text-muted-foreground font-medium">
                         {getTimeAgo(importItem.data)}
                       </span>
                     </div>
@@ -222,11 +222,11 @@ export function Importacao() {
               </div>
 
               {/* Preview */}
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl p-5 border-2 border-gray-100">
-                <p className="text-sm font-semibold text-gray-600 mb-2">
+              <div className="bg-gradient-to-br from-muted/50 to-muted/20 rounded-xl p-5 border-2 border-border">
+                <p className="text-sm font-semibold text-muted-foreground mb-2">
                   Preview do pedido:
                 </p>
-                <p className="text-sm text-gray-700">{importItem.preview}</p>
+                <p className="text-sm text-foreground">{importItem.preview}</p>
               </div>
 
               {/* Texto Original */}
@@ -235,8 +235,8 @@ export function Importacao() {
                   <span>Ver texto original completo</span>
                   <ArrowRight className="w-4 h-4 group-open:rotate-90 transition-transform" />
                 </summary>
-                <div className="mt-4 p-5 bg-white rounded-xl border-2 border-gray-200">
-                  <pre className="text-sm whitespace-pre-wrap font-sans text-gray-700 leading-relaxed">
+                <div className="mt-4 p-5 bg-card rounded-xl border-2 border-border shadow-inner">
+                  <pre className="text-sm whitespace-pre-wrap font-sans text-muted-foreground leading-relaxed">
                     {importItem.textoOriginal}
                   </pre>
                 </div>
@@ -246,15 +246,15 @@ export function Importacao() {
         ))}
 
         {pendingImports.length === 0 && (
-          <Card className="p-16 border-0 shadow-lg rounded-2xl">
+          <Card className="p-16 border-0 shadow-lg rounded-2xl bg-card">
             <div className="text-center">
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 mx-auto mb-6 flex items-center justify-center">
-                <FileText className="w-10 h-10 text-gray-400" />
+              <div className="w-20 h-20 rounded-2xl bg-muted mx-auto mb-6 flex items-center justify-center">
+                <FileText className="w-10 h-10 text-muted-foreground" />
               </div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-2">
+              <h3 className="text-2xl font-semibold text-foreground mb-2">
                 Nenhum pedido aguardando processamento
               </h3>
-              <p className="text-gray-500 text-lg">
+              <p className="text-muted-foreground text-lg">
                 Novos pedidos recebidos via WhatsApp ou Email aparecerão aqui
               </p>
             </div>
