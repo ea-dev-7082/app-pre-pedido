@@ -9,6 +9,7 @@ export interface OrderItem {
   produto: string;
   quantidade: number;
   precoUnitario: number;
+  precoOriginal: number;
   tipoPreco: PriceType;
   total: number;
   suggestQuantity?: number;
@@ -31,6 +32,7 @@ export interface ClosedOrder {
   valorTotal: number;
   status: ExportStatus;
   itensCount: number;
+  items: OrderItem[];
 }
 
 interface OrdersContextType {
@@ -39,6 +41,8 @@ interface OrdersContextType {
   addOrder: (order: Order) => void;
   closeOrder: (orderId: string) => void;
   deleteOrder: (orderId: string) => void;
+  updateOrderStatus: (orderId: string, status: OrderStatus) => void;
+  updateClosedOrderStatus: (orderId: string, status: ExportStatus) => void;
 }
 
 const OrdersContext = createContext<OrdersContextType | undefined>(undefined);
@@ -56,6 +60,7 @@ const initialActiveOrders: Order[] = [
         produto: "Filtro de Óleo Mann W67/2",
         quantidade: 10,
         precoUnitario: 25.90,
+        precoOriginal: 25.90,
         tipoPreco: "normal",
         total: 259.00,
         suggestQuantity: 20,
@@ -66,6 +71,7 @@ const initialActiveOrders: Order[] = [
         produto: "Pastilha de Freio Cobreq",
         quantidade: 15,
         precoUnitario: 89.90,
+        precoOriginal: 89.90,
         tipoPreco: "oferta",
         total: 1348.50,
       },
@@ -83,8 +89,11 @@ const initialActiveOrders: Order[] = [
         produto: "Óleo Motor 5W30 Mobil",
         quantidade: 50,
         precoUnitario: 45.00,
+        precoOriginal: 55.00,
         tipoPreco: "lote",
         total: 2250.00,
+        suggestQuantity: 50,
+        suggestPrice: 45.00,
       },
     ],
   },
@@ -100,6 +109,7 @@ const initialActiveOrders: Order[] = [
         produto: "Bateria Moura 60Ah",
         quantidade: 8,
         precoUnitario: 450.00,
+        precoOriginal: 450.00,
         tipoPreco: "normal",
         total: 3600.00,
         suggestQuantity: 12,
@@ -117,6 +127,26 @@ const initialClosedOrders: ClosedOrder[] = [
     valorTotal: 15890.50,
     status: "exportado",
     itensCount: 12,
+    items: [
+      {
+        id: "m1",
+        produto: "Filtro de Óleo Mann W67/2",
+        quantidade: 20,
+        precoUnitario: 22.50,
+        precoOriginal: 25.90,
+        tipoPreco: "lote",
+        total: 450.00,
+      },
+      {
+        id: "m2",
+        produto: "Pastilha de Freio Cobreq",
+        quantidade: 15,
+        precoUnitario: 89.90,
+        precoOriginal: 89.90,
+        tipoPreco: "oferta",
+        total: 1348.50,
+      }
+    ]
   },
   {
     id: "C002",
@@ -125,6 +155,19 @@ const initialClosedOrders: ClosedOrder[] = [
     valorTotal: 8450.00,
     status: "pendente",
     itensCount: 8,
+    items: [
+      {
+        id: "m3",
+        produto: "Óleo Motor 5W30 Mobil",
+        quantidade: 50,
+        precoUnitario: 45.00,
+        precoOriginal: 55.00,
+        tipoPreco: "lote",
+        total: 2250.00,
+        suggestQuantity: 50,
+        suggestPrice: 45.00,
+      }
+    ]
   },
 ];
 
@@ -149,6 +192,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       valorTotal: totalValue,
       status: "pendente",
       itensCount: orderToClose.items.length,
+      items: orderToClose.items,
     };
 
     setActiveOrders((prev) => prev.filter((o) => o.id !== orderId));
@@ -159,8 +203,24 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     setActiveOrders((prev) => prev.filter((o) => o.id !== orderId));
   };
 
+  const updateOrderStatus = (orderId: string, status: OrderStatus) => {
+    setActiveOrders((prev) =>
+      prev.map((order) =>
+        order.id === orderId ? { ...order, status } : order
+      )
+    );
+  };
+
+  const updateClosedOrderStatus = (orderId: string, status: ExportStatus) => {
+    setClosedOrders((prev) =>
+      prev.map((order) =>
+        order.id === orderId ? { ...order, status } : order
+      )
+    );
+  };
+
   return (
-    <OrdersContext.Provider value={{ activeOrders, closedOrders, addOrder, closeOrder, deleteOrder }}>
+    <OrdersContext.Provider value={{ activeOrders, closedOrders, addOrder, closeOrder, deleteOrder, updateOrderStatus, updateClosedOrderStatus }}>
       {children}
     </OrdersContext.Provider>
   );

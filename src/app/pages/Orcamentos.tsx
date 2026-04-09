@@ -24,11 +24,12 @@ import { useOrders, Order, OrderItem } from "../contexts/OrdersContext";
 export function Orcamentos() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { activeOrders, closeOrder, addOrder } = useOrders();
+  const { activeOrders, closeOrder, addOrder, deleteOrder, updateOrderStatus } = useOrders();
   
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(activeOrders[0] || null);
-  const [items, setItems] = useState<OrderItem[]>(activeOrders[0]?.items || []);
-  const [cliente, setCliente] = useState(activeOrders[0]?.cliente || "");
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const selectedOrder = activeOrders.find((o) => o.id === selectedOrderId) || null;
+  const [items, setItems] = useState<OrderItem[]>([]);
+  const [cliente, setCliente] = useState("");
   const [isCalculating, setIsCalculating] = useState(false);
   const [newProductInput, setNewProductInput] = useState("");
 
@@ -42,8 +43,15 @@ export function Orcamentos() {
     }
   }, [searchParams]);
 
+  // Efeito para mudar o status do pedido selecionado inicialmente se for "novo"
+  useEffect(() => {
+    if (selectedOrderId && selectedOrder && selectedOrder.status === "novo") {
+      updateOrderStatus(selectedOrderId, "em-analise");
+    }
+  }, [selectedOrderId, selectedOrder?.status, updateOrderStatus]);
+
   const handleNewOrder = () => {
-    setSelectedOrder(null);
+    setSelectedOrderId(null);
     setItems([]);
     setCliente("");
   };
@@ -56,6 +64,7 @@ export function Orcamentos() {
       produto: newProductInput,
       quantidade: 1,
       precoUnitario: 0,
+      precoOriginal: 0,
       tipoPreco: "normal",
       total: 0,
     };
@@ -65,18 +74,46 @@ export function Orcamentos() {
   };
 
   const handleSelectOrder = (order: Order) => {
-    setSelectedOrder(order);
+    setSelectedOrderId(order.id);
     setItems(order.items);
     setCliente(order.cliente);
+    
+    // Se o status for novo, muda para em-analise
+    if (order.status === "novo") {
+      updateOrderStatus(order.id, "em-analise");
+    }
   };
 
   const handleQuantityChange = (itemId: string, newQuantity: number) => {
     setItems((prev) =>
-      prev.map((item) =>
-        item.id === itemId
-          ? { ...item, quantidade: newQuantity, total: newQuantity * item.precoUnitario }
-          : item
-      )
+      prev.map((item) => {
+        if (item.id !== itemId) return item;
+
+        let newPrecoUnitario = item.precoUnitario;
+        let newTipoPreco = item.tipoPreco;
+
+        // Lógica de Preço por Lote
+        if (item.tipoPreco !== "oferta") {
+          if (item.suggestQuantity && item.suggestPrice) {
+            if (newQuantity >= item.suggestQuantity) {
+              newPrecoUnitario = item.suggestPrice;
+              newTipoPreco = "lote";
+            } else {
+              // Se a quantidade baixou do lote, volta para o original
+              newPrecoUnitario = item.precoOriginal;
+              newTipoPreco = "normal";
+            }
+          }
+        }
+
+        return { 
+          ...item, 
+          quantidade: newQuantity, 
+          precoUnitario: newPrecoUnitario,
+          tipoPreco: newTipoPreco,
+          total: newQuantity * newPrecoUnitario 
+        };
+      })
     );
   };
 
@@ -100,7 +137,7 @@ export function Orcamentos() {
     };
 
     addOrder(newOrder);
-    handleSelectOrder(newOrder);
+    setSelectedOrderId(newOrder.id);
     console.log("Pedido salvo:", newOrder);
   };
 
@@ -113,6 +150,15 @@ export function Orcamentos() {
 
   const handleDeleteItem = (itemId: string) => {
     setItems((prev) => prev.filter((item) => item.id !== itemId));
+  };
+
+  const handleRemoveOrder = (orderId: string) => {
+    deleteOrder(orderId);
+    if (selectedOrderId === orderId) {
+      setSelectedOrderId(null);
+      setItems([]);
+      setCliente("");
+    }
   };
 
   const total = items.reduce((sum, item) => sum + item.total, 0);
@@ -154,37 +200,73 @@ export function Orcamentos() {
           )}
 
           {activeOrders.map((order) => (
-            <button
+            <div
               key={order.id}
-              onClick={() => handleSelectOrder(order)}
-              className={`w-full text-left p-4 rounded-2xl transition-all duration-200 ${
-                selectedOrder?.id === order.id
-                  ? "bg-gradient-to-br from-blue-50 to-blue-100/50 border-2 border-blue-500 shadow-lg shadow-blue-500/10 scale-[1.02]"
-                  : "bg-white hover:bg-gray-50 border-2 border-gray-100 hover:border-gray-200 hover:shadow-md"
-              }`}
+              className="relative group"
             >
-              <div className="flex items-start justify-between mb-3">
-                <h3 className="font-semibold text-gray-900 truncate pr-2">{order.cliente}</h3>
-                <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    order.origem === "whatsapp" ? "bg-green-100" : "bg-blue-100"
-                  }`}
-                >
-                  {order.origem === "whatsapp" ? (
-                    <MessageSquare className="w-4 h-4 text-green-600" />
-                  ) : (
-                    <Mail className="w-4 h-4 text-blue-600" />
-                  )}
+              <button
+                onClick={() => handleSelectOrder(order)}
+                className={`w-full text-left p-4 rounded-2xl transition-all duration-200 ${
+                  selectedOrder?.id === order.id
+                    ? "bg-gradient-to-br from-blue-50 to-blue-100/50 border-2 border-blue-500 shadow-lg shadow-blue-500/10 scale-[1.02]"
+                    : "bg-white hover:bg-gray-50 border-2 border-gray-100 hover:border-gray-200 hover:shadow-md"
+                }`}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <h3 className="font-semibold text-gray-900 truncate pr-8">{order.cliente}</h3>
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      order.origem === "whatsapp" ? "bg-green-100" : "bg-blue-100"
+                    }`}
+                  >
+                    {order.origem === "whatsapp" ? (
+                      <MessageSquare className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <Mail className="w-4 h-4 text-blue-600" />
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500">
-                  {new Date(order.data).toLocaleDateString("pt-BR")}
-                </span>
-                <StatusBadge status={order.status} />
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-500">
+                    {new Date(order.data).toLocaleDateString("pt-BR")}
+                  </span>
+                  <StatusBadge status={order.status} />
+                </div>
+              </button>
+
+              <div className="absolute top-4 right-14 opacity-0 group-hover:opacity-100 transition-opacity">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-8 h-8 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="rounded-2xl">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir Orçamento?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Tem certeza que deseja excluir o orçamento de "{order.cliente}"? Esta ação não pode ser desfeita.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={() => handleRemoveOrder(order.id)}
+                        className="bg-red-500 hover:bg-red-600 rounded-xl"
+                      >
+                        Excluir
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
-            </button>
+            </div>
           ))}
         </div>
       </div>
@@ -367,6 +449,7 @@ export function Orcamentos() {
                     produto: "Novo Produto",
                     quantidade: 1,
                     precoUnitario: 0,
+                    precoOriginal: 0,
                     tipoPreco: "normal",
                     total: 0,
                   };

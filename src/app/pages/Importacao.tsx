@@ -3,6 +3,8 @@ import { MessageSquare, Mail, ArrowRight, FileText, Loader2 } from "lucide-react
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
+import { useNavigate } from "react-router";
+import { useOrders } from "../contexts/OrdersContext";
 
 type Origin = "whatsapp" | "email";
 
@@ -67,15 +69,109 @@ Pode me passar o preço?`,
 ];
 
 export function Importacao() {
+  const navigate = useNavigate();
+  const { addOrder } = useOrders();
   const [imports, setImports] = useState<PendingImport[]>(mockPendingImports);
   const [processing, setProcessing] = useState<string | null>(null);
 
+  const parseImportItems = (text: string) => {
+    const lines = text.split('\n');
+    const items: any[] = [];
+    
+    // Regex para padrões comuns: 
+    // 1. "- 10 filtros..." (WhatsApp)
+    // 2. "1. Bateria... - Qtd: 20" (Email)
+    // 3. "10x Produto" ou "10 unidades de Produto"
+    const patterns = [
+      /[-*]?\s*(\d+)\s+([^-:]+)/, // Padrão WhatsApp: "- 10 Produto"
+      /([^0-9]+)\s*[-:]\s*Qtd:\s*(\d+)/i, // Padrão Email: "Produto - Qtd: 10"
+      /(\d+)\s*x\s*(.+)/i, // Padrão: "10x Produto"
+    ];
+
+    lines.forEach(line => {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) return;
+
+      let matchFound = false;
+      for (const pattern of patterns) {
+        const match = trimmedLine.match(pattern);
+        if (match) {
+          let quantity, product;
+          
+          if (pattern.source.includes('Qtd:')) {
+            product = match[1].trim().replace(/^\d+\.\s*/, ''); // Remove "1. " do início
+            quantity = parseInt(match[2]);
+          } else {
+            quantity = parseInt(match[1]);
+            product = match[2].trim();
+          }
+
+          if (quantity && product) {
+            // Simulando preços básicos
+            const basePrice = product.toLowerCase().includes('filtro') ? 25.90 : 
+                             product.toLowerCase().includes('pastilha') ? 89.90 :
+                             product.toLowerCase().includes('bateria') ? 450.00 :
+                             product.toLowerCase().includes('óleo') ? 55.00 : 120.00;
+
+            items.push({
+              id: Math.random().toString(36).substr(2, 9),
+              produto: product,
+              quantidade: quantity,
+              precoUnitario: basePrice,
+              precoOriginal: basePrice,
+              tipoPreco: "normal",
+              total: quantity * basePrice,
+              suggestQuantity: quantity > 10 ? Math.ceil(quantity * 1.5) : 20,
+              suggestPrice: basePrice * 0.85
+            });
+            matchFound = true;
+            break;
+          }
+        }
+      }
+    });
+
+    return items;
+  };
+
   const handleProcess = (importId: string) => {
+    const importItem = imports.find(imp => imp.id === importId);
+    if (!importItem) return;
+
     setProcessing(importId);
+    
     setTimeout(() => {
+      const parsedItems = parseImportItems(importItem.textoOriginal);
+      
+      // Se não conseguiu parsear nada, usa um fallback ou os itens identificados
+      const finalItems = parsedItems.length > 0 ? parsedItems : [
+        {
+          id: Math.random().toString(36).substr(2, 9),
+          produto: importItem.preview.split(',')[0],
+          quantidade: 1,
+          precoUnitario: 100.00,
+          precoOriginal: 100.00,
+          tipoPreco: "normal",
+          total: 100.00
+        }
+      ];
+
+      // Adiciona o pedido ao contexto global
+      addOrder({
+        id: `I${Math.floor(1000 + Math.random() * 9000)}`,
+        cliente: importItem.cliente,
+        origem: importItem.origem,
+        data: new Date().toISOString().split('T')[0],
+        status: "novo",
+        items: finalItems
+      });
+
       setImports((prev) => prev.filter((imp) => imp.id !== importId));
       setProcessing(null);
-    }, 1500);
+      
+      // Redireciona para o início (Orçamentos)
+      navigate("/");
+    }, 1200);
   };
 
   const getTimeAgo = (dateString: string) => {

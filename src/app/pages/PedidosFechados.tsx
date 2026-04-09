@@ -1,18 +1,86 @@
 import { useState } from "react";
-import { Download, FileSpreadsheet, CheckCircle2, Clock } from "lucide-react";
+import { Download, FileSpreadsheet, CheckCircle2, Clock, Eye } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Input } from "../components/ui/input";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from "../components/ui/dialog";
 import { useOrders } from "../contexts/OrdersContext";
+import { utils, writeFile } from "xlsx";
+import { toast } from "sonner";
 
 export function PedidosFechados() {
-  const { closedOrders } = useOrders();
+  const { closedOrders, updateClosedOrderStatus } = useOrders();
   const [searchTerm, setSearchTerm] = useState("");
 
   const handleExport = (orderId: string) => {
-    console.log("Exportando pedido:", orderId);
-    // Lógica de exportação
+    const order = closedOrders.find((o) => o.id === orderId);
+    if (!order) {
+      toast.error("Pedido não encontrado");
+      return;
+    }
+
+    // Preparar dados para o Excel
+    const data = order.items.map((item) => ({
+      "Produto": item.produto,
+      "Quantidade": item.quantidade,
+      "Preço Unit.": item.precoUnitario,
+      "Tipo de Preço": item.tipoPreco.charAt(0).toUpperCase() + item.tipoPreco.slice(1),
+      "Total": item.total,
+    }));
+
+    // Criar planilha
+    const worksheet = utils.json_to_sheet(data);
+    const workbook = utils.book_new();
+    utils.book_append_sheet(workbook, worksheet, "Itens do Pedido");
+
+    // Adicionar informações extras (Nome do Cliente) no topo se possível, 
+    // ou apenas nomear o arquivo de forma descritiva
+    
+    // Download do arquivo
+    const fileName = `Pedido_${order.id}_${order.cliente.replace(/\s+/g, "_")}.xlsx`;
+    writeFile(workbook, fileName);
+    
+    updateClosedOrderStatus(order.id, "exportado");
+    toast.success(`Pedido de ${order.cliente} exportado com sucesso!`);
+  };
+
+  const handleExportAll = () => {
+    if (filteredOrders.length === 0) {
+      toast.error("Nenhum pedido para exportar");
+      return;
+    }
+
+    const allData = filteredOrders.flatMap((order) => 
+      order.items.map((item) => ({
+        "Pedido ID": order.id,
+        "Cliente": order.cliente,
+        "Data": order.data,
+        "Produto": item.produto,
+        "Quantidade": item.quantidade,
+        "Preço Unit.": item.precoUnitario,
+        "Tipo de Preço": item.tipoPreco.charAt(0).toUpperCase() + item.tipoPreco.slice(1),
+        "Total": item.total,
+      }))
+    );
+
+    const worksheet = utils.json_to_sheet(allData);
+    const workbook = utils.book_new();
+    utils.book_append_sheet(workbook, worksheet, "Todos os Pedidos");
+
+    writeFile(workbook, `Consolidado_Pedidos_${new Date().toISOString().split('T')[0]}.xlsx`);
+    
+    filteredOrders.forEach((order) => {
+      updateClosedOrderStatus(order.id, "exportado");
+    });
+    
+    toast.success("Todos os pedidos foram consolidados e exportados!");
   };
 
   const filteredOrders = closedOrders.filter((order) =>
@@ -86,7 +154,11 @@ export function PedidosFechados() {
               className="bg-gray-50 border-gray-200 h-11 rounded-xl"
             />
           </div>
-          <Button variant="outline" className="gap-2 h-11 px-5 rounded-xl border-2 hover:border-blue-500 hover:bg-blue-50">
+          <Button 
+            variant="outline" 
+            onClick={handleExportAll}
+            className="gap-2 h-11 px-5 rounded-xl border-2 hover:border-blue-500 hover:bg-blue-50"
+          >
             <Download className="w-4 h-4" />
             Exportar Todos
           </Button>
@@ -142,15 +214,87 @@ export function PedidosFechados() {
                     )}
                   </td>
                   <td className="p-5 text-center">
-                    <Button
-                      size="sm"
-                      variant={order.status === "exportado" ? "outline" : "default"}
-                      onClick={() => handleExport(order.id)}
-                      className={`gap-2 rounded-xl ${order.status === "exportado" ? "border-2 hover:border-blue-500 hover:bg-blue-50" : "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 shadow-md"}`}
-                    >
-                      <Download className="w-4 h-4" />
-                      {order.status === "exportado" ? "Reexportar" : "Exportar"}
-                    </Button>
+                    <div className="flex items-center justify-center gap-2">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            className="w-10 h-10 rounded-xl text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            <Eye className="w-5 h-5" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-3xl rounded-3xl overflow-hidden p-0 gap-0">
+                          <DialogHeader className="p-8 bg-gradient-to-br from-blue-600 to-blue-500 text-white">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <DialogTitle className="text-2xl font-bold flex items-center gap-3">
+                                  <span>Pedido {order.id}</span>
+                                  <Badge className="bg-white/20 text-white border-white/30 backdrop-blur-sm">
+                                    {order.status === "exportado" ? "Exportado" : "Pendente"}
+                                  </Badge>
+                                </DialogTitle>
+                                <p className="text-blue-100 mt-1 text-lg">{order.cliente}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-blue-200 text-sm uppercase font-bold tracking-wider">Total do Pedido</p>
+                                <p className="text-3xl font-black">R$ {order.valorTotal.toFixed(2)}</p>
+                              </div>
+                            </div>
+                          </DialogHeader>
+                          
+                          <div className="p-8">
+                            <div className="flex items-center justify-between mb-6">
+                              <h3 className="text-lg font-bold text-gray-900">Itens do Pedido ({order.itensCount})</h3>
+                              <span className="text-sm text-gray-500">{new Date(order.data).toLocaleDateString("pt-BR", { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+                            </div>
+
+                            <div className="rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
+                              <table className="w-full">
+                                <thead className="bg-gray-50 border-b border-gray-100">
+                                  <tr>
+                                    <th className="text-left p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Produto</th>
+                                    <th className="text-center p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Qtde</th>
+                                    <th className="text-right p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Preço</th>
+                                    <th className="text-right p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Total</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-50 text-sm">
+                                  {order.items.map((item) => (
+                                    <tr key={item.id} className="hover:bg-blue-50/10 transition-colors">
+                                      <td className="p-4">
+                                        <p className="font-semibold text-gray-900">{item.produto}</p>
+                                        <Badge variant="outline" className={`mt-1 text-[10px] px-1.5 py-0 uppercase ${
+                                          item.tipoPreco === "lote" ? "text-emerald-600 border-emerald-200 bg-emerald-50" : 
+                                          item.tipoPreco === "oferta" ? "text-orange-600 border-orange-200 bg-orange-50" :
+                                          "text-gray-500 border-gray-200 bg-gray-50"
+                                        }`}>
+                                          {item.tipoPreco}
+                                        </Badge>
+                                      </td>
+                                      <td className="p-4 text-center font-medium">{item.quantidade}</td>
+                                      <td className="p-4 text-right text-gray-500">R$ {item.precoUnitario.toFixed(2)}</td>
+                                      <td className="p-4 text-right font-bold text-gray-900">R$ {item.total.toFixed(2)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>                      
+
+                      <Button
+                        size="sm"
+                        variant={order.status === "exportado" ? "outline" : "default"}
+                        onClick={() => handleExport(order.id)}
+                        className={`gap-2 rounded-xl h-10 ${order.status === "exportado" ? "border-2 hover:border-blue-500 hover:bg-blue-50" : "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 shadow-md"}`}
+                      >
+                        <Download className="w-4 h-4" />
+                        {order.status === "exportado" ? "Reexportar" : "Exportar"}
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
