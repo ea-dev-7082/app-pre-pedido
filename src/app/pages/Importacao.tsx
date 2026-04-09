@@ -6,72 +6,10 @@ import { Badge } from "../components/ui/badge";
 import { useNavigate } from "react-router";
 import { useOrders } from "../contexts/OrdersContext";
 
-type Origin = "whatsapp" | "email";
-
-interface PendingImport {
-  id: string;
-  cliente: string;
-  origem: Origin;
-  data: string;
-  textoOriginal: string;
-  preview: string;
-}
-
-const mockPendingImports: PendingImport[] = [
-  {
-    id: "I001",
-    cliente: "Oficina Rodrigues",
-    origem: "whatsapp",
-    data: "2026-03-24T10:30:00",
-    textoOriginal: `Bom dia! Preciso de um orçamento:
-    
-- 10 filtros de óleo Mann W67/2
-- 15 pastilhas de freio Cobreq
-- 5 kits de embreagem Sachs
-- 8 jogos de velas NGK
-
-Aguardo retorno. Obrigado!`,
-    preview: "10 filtros de óleo Mann W67/2, 15 pastilhas de freio...",
-  },
-  {
-    id: "I002",
-    cliente: "Auto Peças Millennium",
-    origem: "email",
-    data: "2026-03-24T09:15:00",
-    textoOriginal: `Prezados,
-
-Solicito cotação para os seguintes itens:
-
-1. Bateria Moura 60Ah - Qtd: 20 unidades
-2. Óleo Motor 5W30 Mobil - Qtd: 100 litros
-3. Filtro de ar condicionado - Qtd: 30 unidades
-
-Favor enviar orçamento até o final do dia.
-
-Atenciosamente,
-João Silva`,
-    preview: "Bateria Moura 60Ah - Qtd: 20 unidades, Óleo Motor 5W30...",
-  },
-  {
-    id: "I003",
-    cliente: "Mecânica do Bairro",
-    origem: "whatsapp",
-    data: "2026-03-24T08:45:00",
-    textoOriginal: `Oi! Preciso urgente:
-    
-- Amortecedor dianteiro Fox (par)
-- Disco de freio ventilado
-- Correia dentada com tensor
-
-Pode me passar o preço?`,
-    preview: "Amortecedor dianteiro Fox (par), Disco de freio...",
-  },
-];
 
 export function Importacao() {
   const navigate = useNavigate();
-  const { addOrder } = useOrders();
-  const [imports, setImports] = useState<PendingImport[]>(mockPendingImports);
+  const { addOrder, pendingImports, removePendingImport } = useOrders();
   const [processing, setProcessing] = useState<string | null>(null);
 
   const parseImportItems = (text: string) => {
@@ -135,7 +73,7 @@ export function Importacao() {
   };
 
   const handleProcess = (importId: string) => {
-    const importItem = imports.find(imp => imp.id === importId);
+    const importItem = pendingImports.find(imp => imp.id === importId);
     if (!importItem) return;
 
     setProcessing(importId);
@@ -166,7 +104,7 @@ export function Importacao() {
         items: finalItems
       });
 
-      setImports((prev) => prev.filter((imp) => imp.id !== importId));
+      removePendingImport(importId);
       setProcessing(null);
       
       // Redireciona para o início (Orçamentos)
@@ -202,7 +140,7 @@ export function Importacao() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-blue-600 font-medium">Aguardando Processamento</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{imports.length}</p>
+              <p className="text-3xl font-bold text-gray-900 mt-2">{pendingImports.length}</p>
             </div>
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
               <FileText className="w-7 h-7 text-white" />
@@ -225,7 +163,7 @@ export function Importacao() {
 
       {/* Lista de Importações */}
       <div className="space-y-5">
-        {imports.map((importItem) => (
+        {pendingImports.map((importItem) => (
           <Card key={importItem.id} className="p-6 border-0 shadow-lg hover:shadow-xl transition-all duration-200 rounded-2xl">
             <div className="space-y-4">
               {/* Header do Card */}
@@ -307,7 +245,7 @@ export function Importacao() {
           </Card>
         ))}
 
-        {imports.length === 0 && (
+        {pendingImports.length === 0 && (
           <Card className="p-16 border-0 shadow-lg rounded-2xl">
             <div className="text-center">
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 mx-auto mb-6 flex items-center justify-center">

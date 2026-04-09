@@ -25,6 +25,15 @@ export interface Order {
   items: OrderItem[];
 }
 
+export interface PendingImport {
+  id: string;
+  cliente: string;
+  origem: "whatsapp" | "email";
+  data: string;
+  textoOriginal: string;
+  preview: string;
+}
+
 export interface ClosedOrder {
   id: string;
   cliente: string;
@@ -38,11 +47,13 @@ export interface ClosedOrder {
 interface OrdersContextType {
   activeOrders: Order[];
   closedOrders: ClosedOrder[];
+  pendingImports: PendingImport[];
   addOrder: (order: Order) => void;
   closeOrder: (orderId: string) => void;
   deleteOrder: (orderId: string) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   updateClosedOrderStatus: (orderId: string, status: ExportStatus) => void;
+  removePendingImport: (importId: string) => void;
 }
 
 const OrdersContext = createContext<OrdersContextType | undefined>(undefined);
@@ -171,9 +182,61 @@ const initialClosedOrders: ClosedOrder[] = [
   },
 ];
 
+const mockPendingImports: PendingImport[] = [
+  {
+    id: "I001",
+    cliente: "Oficina Rodrigues",
+    origem: "whatsapp",
+    data: "2026-03-24T10:30:00",
+    textoOriginal: `Bom dia! Preciso de um orçamento:
+    
+- 10 filtros de óleo Mann W67/2
+- 15 pastilhas de freio Cobreq
+- 5 kits de embreagem Sachs
+- 8 jogos de velas NGK
+
+Aguardo retorno. Obrigado!`,
+    preview: "10 filtros de óleo Mann W67/2, 15 pastilhas de freio...",
+  },
+  {
+    id: "I002",
+    cliente: "Auto Peças Millennium",
+    origem: "email",
+    data: "2026-03-24T09:15:00",
+    textoOriginal: `Prezados,
+
+Solicito cotação para os seguintes itens:
+
+1. Bateria Moura 60Ah - Qtd: 20 unidades
+2. Óleo Motor 5W30 Mobil - Qtd: 100 litros
+3. Filtro de ar condicionado - Qtd: 30 unidades
+
+Favor enviar orçamento até o final do dia.
+
+Atenciosamente,
+João Silva`,
+    preview: "Bateria Moura 60Ah - Qtd: 20 unidades, Óleo Motor 5W30...",
+  },
+  {
+    id: "I003",
+    cliente: "Mecânica do Bairro",
+    origem: "whatsapp",
+    data: "2026-03-24T08:45:00",
+    textoOriginal: `Oi! Preciso urgente:
+    
+- Amortecedor dianteiro Fox (par)
+- Disco de freio ventilado
+- Correia dentada com tensor
+
+Pode me passar o preço?`,
+    preview: "Amortecedor dianteiro Fox (par), Disco de freio...",
+  },
+];
+
 export function OrdersProvider({ children }: { children: ReactNode }) {
   const [activeOrders, setActiveOrders] = useState<Order[]>(initialActiveOrders);
   const [closedOrders, setClosedOrders] = useState<ClosedOrder[]>(initialClosedOrders);
+  const [pendingImports, setPendingImports] = useState<PendingImport[]>(mockPendingImports);
 
   const addOrder = (order: Order) => {
     setActiveOrders((prev) => [order, ...prev]);
@@ -219,8 +282,22 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const removePendingImport = (importId: string) => {
+    setPendingImports((prev) => prev.filter((imp) => imp.id !== importId));
+  };
+
   return (
-    <OrdersContext.Provider value={{ activeOrders, closedOrders, addOrder, closeOrder, deleteOrder, updateOrderStatus, updateClosedOrderStatus }}>
+    <OrdersContext.Provider value={{ 
+      activeOrders, 
+      closedOrders, 
+      pendingImports,
+      addOrder, 
+      closeOrder, 
+      deleteOrder, 
+      updateOrderStatus, 
+      updateClosedOrderStatus,
+      removePendingImport
+    }}>
       {children}
     </OrdersContext.Provider>
   );
