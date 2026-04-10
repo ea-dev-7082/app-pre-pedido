@@ -55,6 +55,8 @@ interface OrdersContextType {
   updateOrder: (order: Order) => void;
   updateClosedOrderStatus: (orderId: string, status: ExportStatus) => void;
   removePendingImport: (importId: string) => void;
+  syncImports: () => Promise<void>;
+  isSyncing: boolean;
 }
 
 const OrdersContext = createContext<OrdersContextType | undefined>(undefined);
@@ -238,6 +240,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
   const [activeOrders, setActiveOrders] = useState<Order[]>(initialActiveOrders);
   const [closedOrders, setClosedOrders] = useState<ClosedOrder[]>(initialClosedOrders);
   const [pendingImports, setPendingImports] = useState<PendingImport[]>(mockPendingImports);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const addOrder = (order: Order) => {
     setActiveOrders((prev) => [order, ...prev]);
@@ -295,6 +298,50 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     setPendingImports((prev) => prev.filter((imp) => imp.id !== importId));
   };
 
+  const syncImports = async () => {
+    setIsSyncing(true);
+    try {
+      // URL do n8n configurada pelo usuário
+      const WEBHOOK_URL = 'https://n8n.kaffspiel.cloud/webhook-test/wppmanso';
+      
+      const response = await fetch(WEBHOOK_URL);
+      if (!response.ok) throw new Error('Falha ao sincronizar com n8n');
+      
+      const rawData = await response.json();
+      
+      // Mapeamento da estrutura específica da Evolution API via n8n
+      if (Array.isArray(rawData)) {
+        const mappedImports: PendingImport[] = rawData
+          .filter(item => item.body?.data?.message?.conversation) // Apenas mensagens de texto
+          .map(item => {
+            const body = item.body;
+            const msgData = body.data;
+            const text = msgData.message.conversation;
+            
+            return {
+              id: msgData.key.id,
+              cliente: msgData.pushName || "Cliente WhatsApp",
+              origem: "whatsapp",
+              data: body.date_time || new Date().toISOString(),
+              textoOriginal: text,
+              preview: text.length > 60 ? text.substring(0, 60) + "..." : text
+            };
+          });
+
+        setPendingImports(prev => {
+          // Filtra duplicados pelo ID antes de adicionar
+          const existingIds = new Set(prev.map(p => p.id));
+          const newImports = mappedImports.filter(imp => !existingIds.has(imp.id));
+          return [...newImports, ...prev];
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao sincronizar com n8n:", error);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   return (
     <OrdersContext.Provider value={{ 
       activeOrders, 
@@ -306,7 +353,9 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
       updateOrderStatus, 
       updateOrder,
       updateClosedOrderStatus,
-      removePendingImport
+      removePendingImport,
+      syncImports,
+      isSyncing
     }}>
       {children}
     </OrdersContext.Provider>

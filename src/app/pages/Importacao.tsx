@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageSquare, Mail, ArrowRight, FileText, Loader2 } from "lucide-react";
+import { MessageSquare, Mail, ArrowRight, FileText, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -9,7 +9,7 @@ import { useOrders } from "../contexts/OrdersContext";
 
 export function Importacao() {
   const navigate = useNavigate();
-  const { addOrder, pendingImports, removePendingImport } = useOrders();
+  const { addOrder, pendingImports, removePendingImport, syncImports, isSyncing } = useOrders();
   const [processing, setProcessing] = useState<string | null>(null);
 
   const parseImportItems = (text: string) => {
@@ -127,11 +127,22 @@ export function Importacao() {
   return (
     <div className="p-8 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold text-foreground">Importação de Pedidos</h1>
-        <p className="text-muted-foreground mt-2 text-lg">
-          Pedidos recebidos via WhatsApp e Email aguardando processamento
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-foreground">Importação de Pedidos</h1>
+          <p className="text-muted-foreground mt-2 text-lg">
+            Pedidos recebidos via WhatsApp e Email aguardando processamento
+          </p>
+        </div>
+        <Button 
+          variant="outline" 
+          onClick={() => syncImports()}
+          disabled={isSyncing}
+          className="gap-2 border-2 hover:bg-muted font-semibold transition-all"
+        >
+          <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+          {isSyncing ? "Sincronizando..." : "Sincronizar WhatsApp"}
+        </Button>
       </div>
 
       {/* Stats */}

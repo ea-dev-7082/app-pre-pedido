@@ -1,0 +1,108 @@
+{
+  "name": "Sincronizar Pedidos WhatsApp",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "wppmanso",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "5300e11b-1008-4a20-9be7-feecc90acd5f",
+      "name": "Webhook App",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        64,
+        -144
+      ],
+      "webhookId": "a1fa1ab2-e57d-4efb-bace-d7ab49bdee1e"
+    },
+    {
+      "parameters": {
+        "url": "https://evolution.kaffspiel.cloud/message/findAllCurrent?instance=wpp_manso",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "436e8377-0c2e-48cd-9dd0-656fd8721472",
+      "name": "Buscar Mensagens Evolution",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        272,
+        -144
+      ],
+      "notesInFlow": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "sskQZY0TNuEMd8Rf",
+          "name": "teste"
+        }
+      },
+      "notes": "Aqui você deve configurar seu Header 'apikey' da Evolution API"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nlet messages = [];\n\n// 1. Normaliza a entrada: aceita tanto um único item quanto uma lista\nitems.forEach(item => {\n  const json = item.json;\n  if (Array.isArray(json)) {\n    messages.push(...json);\n  } else if (json.messages && Array.isArray(json.messages)) {\n    messages.push(...json.messages);\n  } else {\n    messages.push(json);\n  }\n});\n\nconst mapped = messages.map(item => {\n  // 2. Extrai os dados internos (suporta o formato 'body.data' ou direto)\n  const innerData = item.body?.data || item.data || item;\n  \n  // 3. Extrai o conteúdo da mensagem\n  const msgObj = innerData.message?.message || innerData.message || {};\n  \n  // 4. Busca o texto\n  const text = msgObj.conversation || \n               msgObj.extendedTextMessage?.text || \n               msgObj.imageMessage?.caption || \n               innerData.content ||\n               \"\";\n\n  if (!text || text.trim() === \"\") return null;\n\n  return {\n    body: {\n      data: {\n        key: { id: innerData.key?.id || Math.random().toString() },\n        pushName: innerData.pushName || \"Cliente WhatsApp\",\n        message: { conversation: text }\n      },\n      date_time: item.body?.date_time || item.date_time || (innerData.messageTimestamp ? new Date(innerData.messageTimestamp * 1000).toISOString() : new Date().toISOString())\n    }\n  };\n}).filter(i => i !== null);\n\nreturn mapped;"
+      },
+      "id": "7eaf0361-6259-4261-a0c2-08c7eecf9a23",
+      "name": "Mapear para App",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        464,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "4a1b2c3d-4e5f-6g7h-8i9j-0k1l2m3n4o5p",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        850,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook App": {
+      "main": [
+        [
+          {
+            "node": "Buscar Mensagens Evolution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Mensagens Evolution": {
+      "main": [
+        [
+          {
+            "node": "Mapear para App",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mapear para App": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
